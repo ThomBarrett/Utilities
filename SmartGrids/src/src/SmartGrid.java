@@ -1,54 +1,57 @@
 package src;
 
 import java.lang.reflect.Array;
+import java.util.function.Supplier;
 
 /**
- * Wraps up the creation of 2D Generic Arrays
- * @param <T> Type of 2D Array
+ * A generic 2D grid structure that wraps around a two-dimensional array.
+ * Supports storing any object type, and provides utility methods for
+ * accessing, modifying, and displaying grid data.
+ *
+ * <p>Note: When initializing the grid using a single populate value, all cells
+ * will reference the same object. This is safe for immutable types (e.g. Integer,
+ * Color), but can cause side effects with mutable types (e.g. lists, custom objects).</p>
+ *
+ * @param <T> the type of element stored in the grid
  */
 public class SmartGrid<T> {
 
-    /**
-     * The length of the array
-     */
+    /** The number of columns (width) of the grid */
     private int sizeX;
 
-    /**
-     * The Height of the array
-     */
+    /** The number of rows (height) of the grid */
     private int sizeY;
 
-    /**
-     * The array being wrapped up
-     */
+    /** The internal 2D array used to store data */
     private T[][] array;
 
     /**
-     * Creates an empty 2D array of specified type
-     * @param type The type of array
-     * @param sizeX The Array Length
-     * @param sizeY The Array Height
+     * Constructs an empty 2D grid of the specified type and dimensions.
+     *
+     * @param type the class type of the grid elements
+     * @param sizeX the number of columns (width)
+     * @param sizeY the number of rows (height)
      */
-    public SmartGrid(Class<T> type, int sizeX, int sizeY){
+    public SmartGrid(Class<T> type, int sizeX, int sizeY) {
         this.sizeX = sizeX;
         this.sizeY = sizeY;
         array = (T[][]) Array.newInstance(type, sizeY, sizeX);
     }
 
     /**
-     * Creates populated array 2D array of specified type with specific population data
-     * @param type The type of array
-     * @param sizeX The Array Length
-     * @param sizeY The Array Height
-     * @param populate The data to populate each cell with
+     * Constructs a 2D grid where each cell is initialized with the same instance.
+     *
+     * <p>⚠ This will assign the same reference to each cell. Use only with
+     * immutable types to avoid unintended side effects.</p>
+     *
+     * @param type the class type of the grid elements
+     * @param sizeX the number of columns (width)
+     * @param sizeY the number of rows (height)
+     * @param populate the object to fill every cell with (shared reference)
      */
-    public SmartGrid(Class<T> type, int sizeX, int sizeY, T populate){
-        this.sizeX = sizeX;
-        this.sizeY = sizeY;
-        array = (T[][])Array.newInstance(type, sizeY, sizeX);
-
+    public SmartGrid(Class<T> type, int sizeX, int sizeY, T populate) {
+        this(type, sizeX, sizeY);
         for (int y = 0; y < sizeY; y++) {
-
             for (int x = 0; x < sizeX; x++) {
                 array[y][x] = populate;
             }
@@ -56,109 +59,114 @@ public class SmartGrid<T> {
     }
 
     /**
-     * Writes the array out to the console
+     * Creates a grid where each cell is initialized with a new object provided by a supplier.
+     *
+     * @param type the class type of the grid elements
+     * @param sizeX the number of columns (width)
+     * @param sizeY the number of rows (height)
+     * @param supplier a function that generates a new instance for each cell
+     * @param <T> the type of elements in the grid
+     * @return a new SmartGrid instance with per-cell object instantiation
      */
-    public void displayGrid(){
+    public static <T> SmartGrid<T> filledWith(Class<T> type, int sizeX, int sizeY, Supplier<T> supplier) {
+        SmartGrid<T> grid = new SmartGrid<>(type, sizeX, sizeY);
         for (int y = 0; y < sizeY; y++) {
-
             for (int x = 0; x < sizeX; x++) {
-                if(!isPositionEmpty(x,y)){
-                    displayCell(x,y);
-                }else{
-                    System.out.print("\u25A1");
-                }
+                grid.setPositionValue(x, y, supplier.get());
+            }
+        }
+        return grid;
+    }
 
+    /**
+     * Displays the grid to the console, printing each cell.
+     * Empty (null) cells are represented by a hollow square (□).
+     */
+    public void displayGrid() {
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                if (!isPositionEmpty(x, y)) {
+                    displayCell(x, y);
+                } else {
+                    System.out.print("\u25A1"); // Unicode hollow square
+                }
             }
             System.out.println();
         }
     }
 
     /**
-     * Writes a cell out to the console
-     * @param x The X position of the Cell
-     * @param y The Y position of the Cell
+     * Displays a single cell in the console by calling its toString method.
+     *
+     * @param x the x-coordinate (column index)
+     * @param y the y-coordinate (row index)
      */
-    public void displayCell(int x, int y){
+    public void displayCell(int x, int y) {
         System.out.print(array[y][x].toString());
     }
 
     /**
-     * Gets the value of a specific cell
-     * @param x The X position of the Cell
-     * @param y The Y position of the Cell
-     * @return The Value of the Cell
+     * Retrieves the value stored at the specified position.
+     *
+     * @param x the x-coordinate (column index)
+     * @param y the y-coordinate (row index)
+     * @return the value at the specified cell, or null if empty
      */
-    public T getPositionValue(int x, int y){
+    public T getPositionValue(int x, int y) {
         return array[y][x];
     }
 
     /**
-     * Set the value of a specific cell
-     * @param x The X position of the Cell
-     * @param y The Y position of the Cell
-     * @param value The Value to set the Cell
+     * Sets the value of a specific cell in the grid.
+     *
+     * @param x the x-coordinate (column index)
+     * @param y the y-coordinate (row index)
+     * @param value the value to assign to the cell
      */
-    public void setPositionValue(int x, int y, T value){
+    public void setPositionValue(int x, int y, T value) {
         array[y][x] = value;
     }
 
     /**
-     * Finds out if specific cell is empty
-     * @param x The X position of the Cell
-     * @param y The Y position of the Cell
-     * @return True if cell is empty False if cell is not
+     * Checks whether the specified cell is empty (null).
+     *
+     * @param x the x-coordinate (column index)
+     * @param y the y-coordinate (row index)
+     * @return true if the cell is null, false otherwise
      */
-    public boolean isPositionEmpty(int x, int y){
-        if(getPositionValue(x,y) == null){
-            return true;
-        }else{
-            return false;
-        }
+    public boolean isPositionEmpty(int x, int y) {
+        return getPositionValue(x, y) == null;
     }
 
-    /**
-     * Gets the length
-     * @return sizeX
-     */
+    /** @return the number of columns (width) */
     public int getSizeX() {
         return sizeX;
     }
 
-    /**
-     * Sets the length
-     * @param sizeX The new size
-     */
+    /** @param sizeX the new number of columns (width) */
     public void setSizeX(int sizeX) {
         this.sizeX = sizeX;
     }
 
-    /**
-     * Gets the height
-     * @return sizeY
-     */
+    /** @return the number of rows (height) */
     public int getSizeY() {
         return sizeY;
     }
 
-    /**
-     * Sets the height
-     * @param sizeY The new size
-     */
+    /** @param sizeY the new number of rows (height) */
     public void setSizeY(int sizeY) {
         this.sizeY = sizeY;
     }
 
-    /**
-     * Gets the wrapped up array
-     * @return array
-     */
+    /** @return the underlying 2D array */
     public T[][] getArray() {
         return array;
     }
 
     /**
-     * Sets the 2D array to new 2D array of same type
-     * @param array
+     * Sets the internal 2D array to a new one.
+     *
+     * @param array the new 2D array to use
      */
     public void setArray(T[][] array) {
         this.array = array;
