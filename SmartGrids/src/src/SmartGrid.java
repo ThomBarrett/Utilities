@@ -1,36 +1,35 @@
 package src;
 
+import java.io.Serializable;
 import java.lang.reflect.Array;
-import java.util.function.Supplier;
+import java.util.Iterator;
 
 /**
- * A generic 2D grid structure that wraps around a two-dimensional array.
- * Supports storing any object type, and provides utility methods for
- * accessing, modifying, and displaying grid data.
- *
- * <p>Note: When initializing the grid using a single populate value, all cells
- * will reference the same object. This is safe for immutable types (e.g. Integer,
- * Color), but can cause side effects with mutable types (e.g. lists, custom objects).</p>
- *
- * @param <T> the type of element stored in the grid
+ * Wraps up the creation of 2D Generic Arrays
+ * @param <T> Type of 2D Array
  */
-public class SmartGrid<T> {
+public class SmartGrid<T> implements Serializable, Iterable<T> {
 
-    /** The number of columns (width) of the grid */
+    /**
+     * The length of the array
+     */
     private int sizeX;
 
-    /** The number of rows (height) of the grid */
+    /**
+     * The Height of the array
+     */
     private int sizeY;
 
-    /** The internal 2D array used to store data */
+    /**
+     * The array being wrapped up
+     */
     private T[][] array;
 
     /**
-     * Constructs an empty 2D grid of the specified type and dimensions.
-     *
-     * @param type the class type of the grid elements
-     * @param sizeX the number of columns (width)
-     * @param sizeY the number of rows (height)
+     * Creates an empty 2D array of specified type
+     * @param type The type of array
+     * @param sizeX The Array Length
+     * @param sizeY The Array Height
      */
     public SmartGrid(Class<T> type, int sizeX, int sizeY) {
         this.sizeX = sizeX;
@@ -39,18 +38,17 @@ public class SmartGrid<T> {
     }
 
     /**
-     * Constructs a 2D grid where each cell is initialized with the same instance.
-     *
-     * <p>⚠ This will assign the same reference to each cell. Use only with
-     * immutable types to avoid unintended side effects.</p>
-     *
-     * @param type the class type of the grid elements
-     * @param sizeX the number of columns (width)
-     * @param sizeY the number of rows (height)
-     * @param populate the object to fill every cell with (shared reference)
+     * Creates populated array 2D array of specified type with specific population data
+     * @param type The type of array
+     * @param sizeX The Array Length
+     * @param sizeY The Array Height
+     * @param populate The data to populate each cell with
      */
     public SmartGrid(Class<T> type, int sizeX, int sizeY, T populate) {
-        this(type, sizeX, sizeY);
+        this.sizeX = sizeX;
+        this.sizeY = sizeY;
+        array = (T[][]) Array.newInstance(type, sizeY, sizeX);
+
         for (int y = 0; y < sizeY; y++) {
             for (int x = 0; x < sizeX; x++) {
                 array[y][x] = populate;
@@ -59,28 +57,7 @@ public class SmartGrid<T> {
     }
 
     /**
-     * Creates a grid where each cell is initialized with a new object provided by a supplier.
-     *
-     * @param type the class type of the grid elements
-     * @param sizeX the number of columns (width)
-     * @param sizeY the number of rows (height)
-     * @param supplier a function that generates a new instance for each cell
-     * @param <T> the type of elements in the grid
-     * @return a new SmartGrid instance with per-cell object instantiation
-     */
-    public static <T> SmartGrid<T> filledWith(Class<T> type, int sizeX, int sizeY, Supplier<T> supplier) {
-        SmartGrid<T> grid = new SmartGrid<>(type, sizeX, sizeY);
-        for (int y = 0; y < sizeY; y++) {
-            for (int x = 0; x < sizeX; x++) {
-                grid.setPositionValue(x, y, supplier.get());
-            }
-        }
-        return grid;
-    }
-
-    /**
-     * Displays the grid to the console, printing each cell.
-     * Empty (null) cells are represented by a hollow square (□).
+     * Writes the array out to the console
      */
     public void displayGrid() {
         for (int y = 0; y < sizeY; y++) {
@@ -88,7 +65,7 @@ public class SmartGrid<T> {
                 if (!isPositionEmpty(x, y)) {
                     displayCell(x, y);
                 } else {
-                    System.out.print("\u25A1"); // Unicode hollow square
+                    System.out.print("\u25A1");
                 }
             }
             System.out.println();
@@ -96,79 +73,249 @@ public class SmartGrid<T> {
     }
 
     /**
-     * Displays a single cell in the console by calling its toString method.
-     *
-     * @param x the x-coordinate (column index)
-     * @param y the y-coordinate (row index)
+     * Writes a cell out to the console
+     * @param x The X position of the Cell
+     * @param y The Y position of the Cell
      */
     public void displayCell(int x, int y) {
         System.out.print(array[y][x].toString());
     }
 
     /**
-     * Retrieves the value stored at the specified position.
-     *
-     * @param x the x-coordinate (column index)
-     * @param y the y-coordinate (row index)
-     * @return the value at the specified cell, or null if empty
+     * Gets the value of a specific cell
+     * @param x The X position of the Cell
+     * @param y The Y position of the Cell
+     * @return The Value of the Cell
      */
     public T getPositionValue(int x, int y) {
+        checkBounds(x, y);
         return array[y][x];
     }
 
     /**
-     * Sets the value of a specific cell in the grid.
-     *
-     * @param x the x-coordinate (column index)
-     * @param y the y-coordinate (row index)
-     * @param value the value to assign to the cell
+     * Set the value of a specific cell
+     * @param x The X position of the Cell
+     * @param y The Y position of the Cell
+     * @param value The Value to set the Cell
      */
     public void setPositionValue(int x, int y, T value) {
+        checkBounds(x, y);
         array[y][x] = value;
     }
 
     /**
-     * Checks whether the specified cell is empty (null).
-     *
-     * @param x the x-coordinate (column index)
-     * @param y the y-coordinate (row index)
-     * @return true if the cell is null, false otherwise
+     * Finds out if specific cell is empty
+     * @param x The X position of the Cell
+     * @param y The Y position of the Cell
+     * @return True if cell is empty False if cell is not
      */
     public boolean isPositionEmpty(int x, int y) {
-        return getPositionValue(x, y) == null;
+        checkBounds(x, y);
+        return array[y][x] == null;
     }
 
-    /** @return the number of columns (width) */
+    /**
+     * Gets the length
+     * @return sizeX
+     */
     public int getSizeX() {
         return sizeX;
     }
 
-    /** @param sizeX the new number of columns (width) */
+    /**
+     * Sets the length
+     * @param sizeX The new size
+     */
     public void setSizeX(int sizeX) {
         this.sizeX = sizeX;
     }
 
-    /** @return the number of rows (height) */
+    /**
+     * Gets the height
+     * @return sizeY
+     */
     public int getSizeY() {
         return sizeY;
     }
 
-    /** @param sizeY the new number of rows (height) */
+    /**
+     * Sets the height
+     * @param sizeY The new size
+     */
     public void setSizeY(int sizeY) {
         this.sizeY = sizeY;
     }
 
-    /** @return the underlying 2D array */
+    /**
+     * Gets the wrapped up array
+     * @return array
+     */
     public T[][] getArray() {
         return array;
     }
 
     /**
-     * Sets the internal 2D array to a new one.
-     *
-     * @param array the new 2D array to use
+     * Sets the 2D array to new 2D array of same type
+     * @param array The new 2D array
      */
     public void setArray(T[][] array) {
         this.array = array;
+    }
+
+    /**
+     * Fills the entire grid with a specified value
+     * @param value The value to fill the grid with
+     */
+    public void fill(T value) {
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                array[y][x] = value;
+            }
+        }
+    }
+
+    /**
+     * Clears the grid (sets all cells to null)
+     */
+    public void clear() {
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                array[y][x] = null;
+            }
+        }
+    }
+
+    /**
+     * Returns a string representation of the grid
+     * @return A string representation of the grid
+     */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                sb.append(array[y][x] == null ? "□" : array[y][x].toString());
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Rotates the grid 90 degrees clockwise
+     */
+    public void rotateClockwise() {
+        T[][] rotated = (T[][]) Array.newInstance(array[0][0].getClass(), sizeX, sizeY);
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                rotated[x][sizeY - 1 - y] = array[y][x];
+            }
+        }
+        array = rotated;
+        int temp = sizeX;
+        sizeX = sizeY;
+        sizeY = temp;
+    }
+
+    /**
+     * Rotates the grid 90 degrees counter-clockwise
+     */
+    public void rotateCounterClockwise() {
+        T[][] rotated = (T[][]) Array.newInstance(array[0][0].getClass(), sizeX, sizeY);
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                rotated[sizeX - 1 - x][y] = array[y][x];
+            }
+        }
+        array = rotated;
+        int temp = sizeX;
+        sizeX = sizeY;
+        sizeY = temp;
+    }
+
+    /**
+     * Transposes the grid (swaps rows and columns)
+     */
+    public void transpose() {
+        T[][] transposed = (T[][]) Array.newInstance(array[0][0].getClass(), sizeY, sizeX);
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                transposed[x][y] = array[y][x];
+            }
+        }
+        array = transposed;
+        int temp = sizeX;
+        sizeX = sizeY;
+        sizeY = temp;
+    }
+
+    /**
+     * Resizes the grid to new dimensions
+     * @param newSizeX New length of the grid
+     * @param newSizeY New height of the grid
+     */
+    public void resize(int newSizeX, int newSizeY) {
+        T[][] resized = (T[][]) Array.newInstance(array[0][0].getClass(), newSizeY, newSizeX);
+        for (int y = 0; y < Math.min(sizeY, newSizeY); y++) {
+            for (int x = 0; x < Math.min(sizeX, newSizeX); x++) {
+                resized[y][x] = array[y][x];
+            }
+        }
+        sizeX = newSizeX;
+        sizeY = newSizeY;
+        array = resized;
+    }
+
+    /**
+     * Checks whether a position is within bounds of the grid
+     * @param x X position of the cell
+     * @param y Y position of the cell
+     */
+    private void checkBounds(int x, int y) {
+        if (x < 0 || x >= sizeX || y < 0 || y >= sizeY) {
+            throw new IndexOutOfBoundsException("Position (" + x + ", " + y + ") is out of bounds.");
+        }
+    }
+
+    /**
+     * Returns an iterator for iterating over the grid
+     * @return An iterator for the grid
+     */
+    @Override
+    public Iterator<T> iterator() {
+        return new Iterator<T>() {
+            private int x = 0, y = 0;
+
+            @Override
+            public boolean hasNext() {
+                return y < sizeY;
+            }
+
+            @Override
+            public T next() {
+                T value = array[y][x];
+                if (++x == sizeX) {
+                    x = 0;
+                    y++;
+                }
+                return value;
+            }
+        };
+    }
+
+    /**
+     * Export the grid to a CSV format
+     * @return A CSV representation of the grid
+     */
+    public String exportToCsv() {
+        StringBuilder sb = new StringBuilder();
+        for (int y = 0; y < sizeY; y++) {
+            for (int x = 0; x < sizeX; x++) {
+                sb.append(array[y][x] == null ? "" : array[y][x].toString());
+                if (x < sizeX - 1) sb.append(",");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 }
